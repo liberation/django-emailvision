@@ -57,7 +57,7 @@ class Client(object):
         response, content = self.http.request(url)
 
         if response['status'] == '500':
-            raise FailedApiCall(GetResponse(content).error)
+            raise FailedApiCall(GetResponse(content).error, url)
         if response['status'] != '200':
             msg = 'Server `%s` answered %s status for `%s`.\n%s'
             raise BadResponse(msg % (self.server_name,
