@@ -2,6 +2,8 @@
 django-emailvision
 ==================
 
+**DISCLAIMER**: We do not promote emailvision service.
+
 django emailvision is a python version of the REST API. It currently contains
 only **Individual Member Management** part of the emailvision API.
 
