@@ -47,6 +47,32 @@ class MemberAPI (object):
         response = self.get('/apimember/services/rest/member/insert/', email)
         return response.result
 
+    def insert_or_update_member_by_object(self, email, values):
+        """returns a job id"""
+        data = """<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
+xmlns:api="http://api.service.apimember.emailvision.com/">
+<soapenv:Header/>
+<soapenv:Body>
+<api:insertOrUpdateMemberByObj>
+<token>%s</token>
+<member>
+<dynContent>
+""" % self.token
+        for key in values:
+            data += """<entry><key>%s</key><value>%s</value></entry>""" % (key, values[key])
+        data += """</dynContent>
+<memberUID>email:%s</memberUID>
+</member>
+</api:insertOrUpdateMemberByObj>
+</soapenv:Body>
+</soapenv:Envelope>
+""" % email
+        response = self.post(data)
+        r = response.soap_find('Body')
+        r = r.find('{http://api.service.apimember.emailvision.com/}insertOrUpdateMemberByObjResponse')
+        r = r.find('return').text
+        return r
+
     def update_member_by_email(self, email, key, value):
         """returns a job id"""
         if not value:
