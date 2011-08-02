@@ -121,15 +121,15 @@ class PostResponse (BaseResponse):
 
     @property
     def result(self):
-        return None
+        return None  # FIXME: to implement
 
     @property
     def success(self):
-        return None
+        return None  # FIXME: to implement
 
     @property
     def error(self):
-        return None
+        return None  # FIXME: to implement
 
     def soap_find(self, xpath):
         return self.find('{%s}%s' % ('http://schemas.xmlsoap.org/soap/envelope/',
