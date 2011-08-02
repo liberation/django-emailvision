@@ -97,7 +97,6 @@ class BaseResponse (object):
 class GetResponse (BaseResponse):
 
     def __init__(self, f):
-        self.f = f  # FIXME: remove it
         self.root = etree.fromstring(f)
 
     @property
