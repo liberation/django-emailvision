@@ -26,10 +26,12 @@ Error = namedtuple('Error', ['status', 'description'])
 
 
 class BadResponse(Exception):
+    """This means that emailvision fails to answer the request"""
     def __init__(self, message):
         super(Exception, self).__init__(message)
 
 class FailedApiCall(Exception):
+    """The API call is not legit"""
     def __init__(self, error, url):
         super(Exception, self).__init__('%s: %s. url is %s ' % (error.status, error.description, url))
 
