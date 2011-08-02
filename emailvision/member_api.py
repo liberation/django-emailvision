@@ -9,7 +9,8 @@ class MemberAPI (object):
         self.key = key
         self.client = Client(server_name)
         self.token = None
-
+        self.connected = False
+        
     def get(self, action, *values):
         if self.token is None:
             raise NotConnected()
@@ -27,7 +28,8 @@ class MemberAPI (object):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         # FIXME: manage exceptions
-        self.__disconnect()
+        if self.connected:
+            self.__disconnect()
 
     def __connect(self):
         response = self.client.get('/apimember/services/rest/connect/open/',
