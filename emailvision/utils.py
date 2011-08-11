@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from collections import namedtuple
 from urllib import quote
 
@@ -69,15 +70,16 @@ class Client(object):
 
     def post(self, path, data):
         url = self.server_name + path
-        response, content = self.http.request(url, 'POST', data)
+        response, content = self.http.request(url, 'POST', data.encode('latin1'))
         return PostResponse(content)
 
 
 class BaseResponse (object):
 
     def __init__(self, f):
-        self.f = f
-        self.root = etree.fromstring(f)
+        parser = etree.XMLParser()
+        self.f = f  # FIXME: debug purpose
+        self.root = etree.fromstring(f, parser)
 
     def find(self, xpath_query):
         """Finds the first element using XPath."""
@@ -97,7 +99,7 @@ class BaseResponse (object):
 class GetResponse (BaseResponse):
 
     def __init__(self, f):
-        self.root = etree.fromstring(f)
+        super(GetResponse, self).__init__(f)
 
     @property
     def result(self):
