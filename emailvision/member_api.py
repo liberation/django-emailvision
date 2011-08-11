@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+from django.utils.encoding import smart_unicode
+
 from utils import Client, NotConnected, FailedApiCall, Error
 
 
@@ -10,7 +13,7 @@ class MemberAPI (object):
         self.client = Client(server_name)
         self.token = None
         self.connected = False
-        
+
     def get(self, action, *values):
         if self.token is None:
             raise NotConnected()
@@ -51,7 +54,8 @@ class MemberAPI (object):
 
     def insert_or_update_member_by_object(self, email, values):
         """returns a job id"""
-        data = """<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
+        data = u"""<?xml version="1.0" encoding="latin1" standalone="yes"?>
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
 xmlns:api="http://api.service.apimember.emailvision.com/">
 <soapenv:Header/>
 <soapenv:Body>
@@ -61,8 +65,8 @@ xmlns:api="http://api.service.apimember.emailvision.com/">
 <dynContent>
 """ % self.token
         for key in values:
-            data += """<entry><key>%s</key><value>%s</value></entry>""" % (key, values[key])
-        data += """</dynContent>
+            data += u"""<entry><key>%s</key><value>%s</value></entry>""" % (key, values[key])
+        data += u"""</dynContent>
 <memberUID>email:%s</memberUID>
 </member>
 </api:insertOrUpdateMemberByObj>
@@ -79,7 +83,8 @@ xmlns:api="http://api.service.apimember.emailvision.com/">
         """returns a job id"""
         if not value:
             raise FailedApiCall(Error('NO_VALUE_SET', 'No value provided'), self.client.server_name + '/apimember/services/MemberService?wsdl')
-        data = """<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
+        data = u"""<?xml version="1.0" encoding="latin1" standalone="yes"?>
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
 xmlns:api="http://api.service.apimember.emailvision.com/">
 <soapenv:Header/>
 <soapenv:Body>
