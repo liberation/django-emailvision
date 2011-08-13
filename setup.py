@@ -18,7 +18,7 @@ from setuptools import setup
 
 setup(
     name='django-emailvision',
-    version='0.2.1',
+    version='0.0',
     url='http://packages.python.org/django-emailvision/',
     license='WTF',
     author='Djaz Team',
