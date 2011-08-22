@@ -30,5 +30,5 @@ class BaseResponseTest(TestCase):
         self.assertEquals(index, 1)
 
 
-class PostResponseTest(TestCase):
-    pass
+class PostResponseTest(BaseResponseTest):
+    klass = PostResponse
