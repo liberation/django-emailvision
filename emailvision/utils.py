@@ -87,7 +87,7 @@ class BaseResponse (object):
 
     def findall(self, xpath_query):
         """Finds all elements using XPath."""
-        return self.root.find(xpath_query)
+        return self.root.findall(xpath_query)
 
     def iterfind(self, xpath_query):
         """Returns an iterator over the elements found using the XPath"""
