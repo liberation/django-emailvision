@@ -50,7 +50,6 @@ class Client(object):
         path = action_path + '/'.join([quote(unicode(value)) for value in values])
         url = ''.join((self.server_name, path))
         response, content = self.http.request(url)
-
         if response['status'] == '500':
             raise FailedApiCall(GetResponse(content).error, url)
         if response['status'] != '200':
