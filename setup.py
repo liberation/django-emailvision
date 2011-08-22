@@ -29,9 +29,9 @@ setup(
     namespace_packages=['emailvision'],
     zip_safe=False,
     platforms='any',
-#    tests_require=['nose', 'mock_http'],
-#    test_suite="nose.collector",
-    install_requires=['lxml'],
+    tests_require=['Nose'],
+    test_suite="nose.collector",
+    install_requires=['lxml', 'django'],
     classifiers=[
         'Development Status :: 4 - Beta',
         'Environment :: Web Environment',
