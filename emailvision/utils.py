@@ -86,6 +86,7 @@ class Client(object):
         response = PostResponse(content)
         if not response.success:
             raise FailedApiCall(GetResponse(content).error, url)
+        return PostResponse(content)
 
 
 class BaseResponse (object):
