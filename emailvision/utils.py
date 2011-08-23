@@ -80,7 +80,9 @@ class Client(object):
     def post(self, path, data):
         url = self.server_name + path
         response, content = self.http.request(url, 'POST', data.encode('latin1'))
-        return PostResponse(content)
+        response = PostResponse(content)
+        if not response.success:
+            raise FailedApiCall(GetResponse(content).error, url)
 
 
 class BaseResponse (object):
