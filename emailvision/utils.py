@@ -26,26 +26,29 @@ from httplib2 import Http
 Error = namedtuple('Error', ['status', 'description'])
 
 
-class BadResponse(Exception):
+class BaseEmailVisionException(Exception):
+    pass
+
+class BadResponse(BaseEmailVisionException):
     """This means that emailvision fails to answer the request"""
     def __init__(self, message):
         super(Exception, self).__init__(message)
 
-class FailedApiCall(Exception):
+class FailedApiCall(BaseEmailVisionException):
     """The API call is not legit"""
     def __init__(self, error, url):
         super(Exception, self).__init__('%s: %s. url is %s ' % (error.status, error.description, url))
 
-class NotConnected(Exception):
+class NotConnected(BaseEmailVisionException):
     pass
 
 
-class NotAnErrorResponse(Exception):
+class NotAnErrorResponse(BaseEmailVisionException):
     def __init__(self):
         super(NotAnErrorResponse, self).__init__("result property is not defined for an successful response")
 
 
-class NotASuccessfulResponse(Exception):
+class NotASuccessfulResponse(BaseEmailVisionException):
     def __init__(self):
         super(SuccessfulResponse, self).__init__("error property is not defined for an error response")
 
