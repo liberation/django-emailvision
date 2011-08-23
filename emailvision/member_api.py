@@ -74,10 +74,7 @@ xmlns:api="http://api.service.apimember.emailvision.com/">
 </soapenv:Envelope>
 """ % email
         response = self.post(data)
-        r = response.soap_find('Body')
-        r = r.find('{http://api.service.apimember.emailvision.com/}insertOrUpdateMemberByObjResponse')
-        r = r.find('return').text
-        return r
+        return response.result
 
     def update_member_by_email(self, email, key, value):
         """returns a job id"""
@@ -98,10 +95,7 @@ xmlns:api="http://api.service.apimember.emailvision.com/">
 </soapenv:Envelope>
 """ % (self.token, email, key, value)
         response = self.post(data)
-        r = response.soap_find('Body')
-        r = r.find('{http://api.service.apimember.emailvision.com/}updateMemberResponse')
-        r = r.find('return').text
-        return r
+        return response.result
 
     def retrieve_insert_member_job_status(self, job_id):
         # This does not work, it is always answering a 404.
