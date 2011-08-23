@@ -74,7 +74,6 @@ xmlns:api="http://api.service.apimember.emailvision.com/">
 </soapenv:Envelope>
 """ % email
         response = self.post(data)
-        import pdb; pdb.set_trace()
         r = response.soap_find('Body')
         r = r.find('{http://api.service.apimember.emailvision.com/}insertOrUpdateMemberByObjResponse')
         r = r.find('return').text
