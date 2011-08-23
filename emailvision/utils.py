@@ -70,10 +70,10 @@ class Client(object):
                                      content))
         if response['content-type'] == 'text/xml':
             msg = 'Server `%s` answered %s content-type for `%s`.\n%s'
-            raise BaseResponse(msg % (self.server_name,
-                                      response['content-type'],
-                                      url,
-                                      content))
+            raise BadResponse(msg % (self.server_name,
+                                     response['content-type'],
+                                     url,
+                                     content))
         response = GetResponse(content)
         return response
 
