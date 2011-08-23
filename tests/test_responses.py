@@ -55,3 +55,90 @@ class GetResponseTest(BaseResponseTest):
 
 class PostResponseTest(BaseResponseTest):
     klass = PostResponse
+
+    def test_success_true(self):
+        response = PostResponse("""<?xml version="1.0" ?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+    <soap:Body>
+        <ns2:insertOrUpdateMemberByObjResponse xmlns:ns2="http://api.service.apimember.emailvision.com/">
+            <return>
+                151519200
+            </return>
+        </ns2:insertOrUpdateMemberByObjResponse>
+    </soap:Body>
+</soap:Envelope>
+""")
+        self.assertTrue(response.success)
+
+    def test_success_false(self):
+        response = PostResponse("""<?xml version="1.0" ?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+    <soap:Body>
+        <soap:Fault>
+            <faultcode>
+                soap:Server
+            </faultcode>
+            <faultstring>
+                Fault occurred while processing.
+            </faultstring>
+            <detail>
+                <ns3:MemberServiceException xmlns:ns2="http://api.service.apimember.emailvision.com/" xmlns:ns3="http://exceptions.service.apimember.emailvision.com/">
+                    <description>
+                        {{ description }}
+                    </description>
+                    <fields>
+                        None
+                    </fields>
+                    <status>
+                        {{ status }}
+                    </status>
+                </ns3:MemberServiceException>
+            </detail>
+        </soap:Fault>
+    </soap:Body>
+</soap:Envelope>""")
+        self.assertFalse(response.success)
+
+    def test_result(self):
+        response = PostResponse("""<?xml version="1.0" ?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+    <soap:Body>
+        <ns2:insertOrUpdateMemberByObjResponse xmlns:ns2="http://api.service.apimember.emailvision.com/">
+            <return>
+                151519200
+            </return>
+        </ns2:insertOrUpdateMemberByObjResponse>
+    </soap:Body>
+</soap:Envelope>
+""")
+        self.assertEquals(response.result, '151519200')
+
+    def test_error(self):
+        response = PostResponse("""<?xml version="1.0" ?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+    <soap:Body>
+        <soap:Fault>
+            <faultcode>
+                soap:Server
+            </faultcode>
+            <faultstring>
+                Fault occurred while processing.
+            </faultstring>
+            <detail>
+                <ns3:MemberServiceException xmlns:ns2="http://api.service.apimember.emailvision.com/" xmlns:ns3="http://exceptions.service.apimember.emailvision.com/">
+                    <description>
+                        {{ description }}
+                    </description>
+                    <fields>
+                        None
+                    </fields>
+                    <status>
+                        {{ status }}
+                    </status>
+                </ns3:MemberServiceException>
+            </detail>
+        </soap:Fault>
+    </soap:Body>
+</soap:Envelope>""")
+        self.assertEquals(response.error.status, '{{ status }}')
+        self.assertEquals(response.error.description, '{{ description }}')

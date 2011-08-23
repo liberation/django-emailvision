@@ -40,6 +40,16 @@ class NotConnected(Exception):
     pass
 
 
+class NotAnErrorResponse(Exception):
+    def __init__(self):
+        super(NotAnErrorResponse, self).__init__("result property is not defined for an successful response")
+
+
+class NotASuccessfulResponse(Exception):
+    def __init__(self):
+        super(SuccessfulResponse, self).__init__("error property is not defined for an error response")
+
+
 class Client(object):
 
     def __init__(self, server_name):
@@ -122,15 +132,30 @@ class PostResponse (BaseResponse):
 
     @property
     def result(self):
-        return None  # FIXME: to implement
+        if not self.success:
+            raise NotASuccessfulResponse()
+        body = self.soap_find('Body')
+        method_element = body.getchildren()[0]
+        return method_element.find('return').text.strip()
 
     @property
     def success(self):
-        return None  # FIXME: to implement
+        body = self.soap_find('Body')
+        fault = body.find('{%s}%s' % ('http://schemas.xmlsoap.org/soap/envelope/', 'Fault'))
+        return fault is None
 
     @property
     def error(self):
-        return None  # FIXME: to implement
+        if self.success:
+            raise NotAnErrorResponse()
+        body = self.soap_find('Body')
+        fault = body.find('{%s}%s' % ('http://schemas.xmlsoap.org/soap/envelope/', 'Fault'))
+        detail = fault.find('detail')
+        exception = detail.find('{%s}%s' % ('http://exceptions.service.apimember.emailvision.com/',
+                                            'MemberServiceException'))
+        description = exception.find('description').text.strip()
+        status = exception.find('status').text.strip()
+        return Error(status, description)
 
     def soap_find(self, xpath):
         return self.find('{%s}%s' % ('http://schemas.xmlsoap.org/soap/envelope/',
