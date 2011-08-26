@@ -70,7 +70,7 @@ class Client(object):
 
     def post(self, path, data):
         url = self.server_name + path
-        response, content = self.http.request(url, 'POST', data.encode('latin1', errors='ignore'))
+        response, content = self.http.request(url, 'POST', data.encode('latin1', 'ignore'))
         return PostResponse(content)
 
 
