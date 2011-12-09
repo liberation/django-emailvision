@@ -54,6 +54,9 @@ class MemberAPI (object):
 
     def insert_or_update_member_by_object(self, email, values):
         """returns a job id"""
+        # email is the object key, so it cannot be empty
+        if not email:
+            raise ValueError("insert_or_update_member_by_object: email cannot be empty")
         data = u"""<?xml version="1.0" encoding="latin1" standalone="yes"?>
 <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
 xmlns:api="http://api.service.apimember.emailvision.com/">
