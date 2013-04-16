@@ -26,7 +26,6 @@ setup(
     description='Access emailvision API with Python',
     long_description=__doc__,
     packages=['emailvision'],
-    namespace_packages=['emailvision'],
     zip_safe=False,
     platforms='any',
 #    tests_require=['nose', 'mock_http'],
