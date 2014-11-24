@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
+import requests
+
 from collections import namedtuple
-from urllib import quote
 
 try:
     from lxml import etree
@@ -47,8 +48,7 @@ class Client(object):
         self.server_name = 'https://' + server_name
 
     def get(self, action_path, *values):
-        path = action_path + '/'.join([quote(unicode(value)) for value in values])
-        url = ''.join((self.server_name, path))
+        url = ''.join((self.server_name, action_path))
         response, content = self.http.request(url)
 
         if response['status'] == '500':
@@ -73,6 +73,30 @@ class Client(object):
         response, content = self.http.request(url, 'POST', data.encode('latin1', 'ignore'))
         return PostResponse(content)
 
+    def put(self, url, xml_data=None, csv_data=None):
+        url = self.server_name + url
+        files = {
+            'mergeUpload': ('export_user.xml', xml_data, 'text/xml'),
+            'inputStream': (
+                'dump.csv',
+                csv_data,
+                'application/octet-stream\r\nContent-Transfer-Encoding: base64'
+                )
+            }
+        response = requests.put(url, files=files)
+        if response.status_code == 500:
+            raise FailedApiCall(GetResponse(response.content).error, url)
+
+        if response.status_code != 200:
+            msg = 'Server `%s` answered %s status for `%s`.\n%s'
+            raise BadResponse(msg % (self.server_name,
+                                     response.status_code,
+                                     url,
+                                     response.content))
+
+        response = GetResponse(response.content)
+        return response
+
 
 class BaseResponse (object):
 
@@ -92,8 +116,6 @@ class BaseResponse (object):
     def iterfind(self, xpath_query):
         """Returns an iterator over the elements found using the XPath"""
         return self.root.iterfind(xpath_query)
-
-
 
 
 class GetResponse (BaseResponse):
@@ -136,4 +158,3 @@ class PostResponse (BaseResponse):
     def soap_find(self, xpath):
         return self.find('{%s}%s' % ('http://schemas.xmlsoap.org/soap/envelope/',
                                      xpath))
-
