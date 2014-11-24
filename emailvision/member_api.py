@@ -1,10 +1,14 @@
 # -*- coding: utf-8 -*-
-from django.utils.encoding import smart_unicode
+import codecs
+import requests
+import base64
 
 from utils import Client, NotConnected, FailedApiCall, Error
 
 
 class MemberAPI (object):
+
+    response_debug = None
 
     def __init__(self, login, password, key, server_name):
         self.login = login
@@ -12,18 +16,20 @@ class MemberAPI (object):
         self.key = key
         self.client = Client(server_name)
         self.token = None
-        self.connected = False
 
     def get(self, action, *values):
         if self.token is None:
             raise NotConnected()
-        return self.client.get(action,
-                               self.token,
-                               *values)
+        return self.client.get(action, *values)
 
     def post(self, data):
         path = '/apimember/services/MemberService?wsdl'
         return self.client.post(path, data)
+
+    def put(self, url, xml_data=None, csv_data=None):
+        if self.token is None:
+            raise NotConnected()
+        return self.client.put(url, xml_data, csv_data)
 
     def __enter__(self):
         self.__connect()
@@ -31,14 +37,18 @@ class MemberAPI (object):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         # FIXME: manage exceptions
-        if self.connected:
+        if self.token:
             self.__disconnect()
 
     def __connect(self):
-        response = self.client.get('/apimember/services/rest/connect/open/',
-                                   self.login,
-                                   self.password,
-                                   self.key)
+        url = self.get_member_url(
+            'connect/open/{0}/{1}/{2}'.format(
+                self.login,
+                self.password,
+                self.key
+            )
+        )
+        response = self.client.get(url)
         self.token = response.find('result').text
 
     def __disconnect(self):
@@ -46,6 +56,18 @@ class MemberAPI (object):
             raise NotConnected()
         self.client.get('/apimember/services/rest/connect/close/', self.token)
         self.token = None
+
+    def get_batch_url(self, remote_method):
+        output = "/apibatchmember/services/rest/{0}".format(
+            remote_method
+        )
+        return output
+
+    def get_member_url(self, remote_method):
+        output = "/apimember/services/rest/{0}".format(
+            remote_method
+        )
+        return output
 
     def insert_member_by_email(self, email):
         """returns a job id"""
@@ -85,7 +107,10 @@ xmlns:api="http://api.service.apimember.emailvision.com/">
     def update_member_by_email(self, email, key, value):
         """returns a job id"""
         if not value:
-            raise FailedApiCall(Error('NO_VALUE_SET', 'No value provided'), self.client.server_name + '/apimember/services/MemberService?wsdl')
+            raise FailedApiCall(
+                Error('NO_VALUE_SET', 'No value provided'),
+                self.client.server_name + '/apimember/services/MemberService?wsdl'
+            )
         data = u"""<?xml version="1.0" encoding="latin1" standalone="yes"?>
 <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
 xmlns:api="http://api.service.apimember.emailvision.com/">
@@ -108,7 +133,13 @@ xmlns:api="http://api.service.apimember.emailvision.com/">
 
     def retrieve_insert_member_job_status(self, job_id):
         # This does not work, it is always answering a 404.
-        response = self.get('/apimember/services/rest/member/getInsertMemberStatus/', str(job_id))
+        url = self.get_member_url(
+            'member/getInsertMemberStatus/{0}/{1}'.format(
+                self.token,
+                job_id
+            )
+        )
+        response = self.get(url)
         return response
 
     def __build_member_attributes(self, attributes_node):
@@ -121,23 +152,31 @@ xmlns:api="http://api.service.apimember.emailvision.com/">
             attributes[key] = value
         return attributes
 
-    def iter_over_members_by_email(self, email):
-        response = self.get('/apimember/services/rest/member/getMemberByEmail/', email)
+    def iter_over_members_by_email(self, user_email):
+        url = self.get_member_url(
+            'member/getMemberByEmail/{0}/{1}'.format(
+                self.token,
+                user_email
+            )
+        )
+        response = self.get(url)
         for member in response.find('members').iterfind('member'):
             yield self.__build_member_attributes(member.find('attributes'))
 
-    def retrieve_member_by_id(self, id):
-        response = self.get('/apimember/services/rest/member/getMemberById/', str(id))
+    def retrieve_member_by_id(self, user_id):
+        url = self.get_member_url(
+            'member/getMemberById/{0}/{1}'.format(
+                self.token,
+                user_id
+            )
+        )
+        response = self.get(url)
         attributes_nodes = response.find('apiMember').find('attributes')
         return self.__build_member_attributes(attributes_nodes)
 
-    def iter_over_members_by_page(self, page):
-        response = self.get('/apimember/services/rest/getListMembersByPage/', str(page))
-        for member in response.find('result').iterfind('list'):
-            yield self.__build_member_attributes(member.find('attributes'))
-
     def member_table_column_names(self):
-        response = self.get('/apimember/services/rest/member/descMemberTable/')
+        url = self.get_member_url('member/descMemberTable/')
+        response = self.get(url)
         entries = response.find('memberTable').find('fields').iterfind('entry')
         columns = dict()
         for entry in entries:
@@ -146,23 +185,151 @@ xmlns:api="http://api.service.apimember.emailvision.com/">
             columns[key] = value
         return columns
 
-    def unsubscribe_members_by_email(self, email):
+    def unsubscribe_members_by_email(self, user_email):
         """returns a job id"""
-        response = self.get('/apimember/services/rest/member/unjoinByEmail/', email)
+        url = self.get_member_url(
+            'member/unjoinByEmail/{0}/{1}'.format(
+                self.token,
+                user_email
+            )
+        )
+        response = self.get(url)
         return response.result
 
-    def unsubscribe_members_by_id(self, id):
+    def unsubscribe_members_by_id(self, user_id):
         """returns a job id"""
-        response = self.get('/apimember/services/rest/member/unjoinByMemberId/', str(id))
+        url = self.get_member_url(
+            'member/unjoinByMemberId/{0}/{1}'.format(
+                self.token,
+                user_id
+            )
+        )
+        response = self.get(url)
         return response.result
 
-    def resubscribe_members_by_email(self, email):
+    def resubscribe_members_by_email(self, user_email):
         """returns a job id"""
-        response = self.get('/apimember/services/rest/member/rejoinByEmail/', str(id))
+        url = self.get_member_url(
+            'member/rejoinByEmail/{0}/{1}'.format(
+                self.token,
+                user_email
+            )
+        )
+        response = self.get(url)
         return response.result
 
-    def resubscribe_members_by_id(self, id):
+    def resubscribe_members_by_id(self, user_id):
         """returns a job id"""
-        response = self.get('/apimember/services/rest/member/rejoinByMemberId/', str(id))
+        url = self.get_member_url(
+            'member/rejoinByMemberId/{0}/{1}'.format(
+                self.token,
+                user_id
+            )
+        )
+        response = self.client.get(url)
         return response.result
 
+    def assemble_upstream_body(self, parameters):
+        data = u"""<?xml version="1.0" encoding="UTF-8"?>
+<mergeUpload>
+<criteria>{0}</criteria>
+<fileName>{1}</fileName>
+<separator>{2}</separator>
+<fileEncoding>{3}</fileEncoding>
+<skipFirstLine>{4}</skipFirstLine>
+<mapping>""".format(
+            parameters.criteria,
+            parameters.path.split('/')[-1],
+            parameters.separator,
+            parameters.file_encoding,
+            parameters.skip_first_line,
+        )
+
+        for param in parameters.mapping:
+            data += u"""<column>
+<colNum>{0}</colNum>
+<fieldName>{1}</fieldName>
+<toReplace>{2}</toReplace>
+</column>""".format(param['colNum'], param['fieldName'], param['toReplace'])
+        data += u"""</mapping>
+</mergeUpload>"""
+        return data
+
+    def upload_file_merge(self, parameters):
+        if not self.token:
+            return "You should try to connect first!"
+        url = self.get_batch_url(
+            'batchmemberservice/{0}/batchmember/mergeUpload'.format(self.token)
+            )
+
+        data = self.assemble_upstream_body(parameters)
+
+        response = self.put(url, data, parameters.file_content)
+
+        self.response_debug = response
+
+        return u"Upload status : {0}".format(
+            self.get_last_upload_status()
+        )
+
+    def get_log_file(self, upload_id=None):
+        if not upload_id:
+            upload_id = self.get_last_upload_id()
+
+        url = self.get_batch_url(
+            'batchmemberservice/{0}/batchmember/{1}/getLogFile'.format(
+                self.token,
+                upload_id
+            )
+        )
+        response = self.get(url)
+        return response.result
+
+    def get_bad_file(self, upload_id=None):
+        if not upload_id:
+            upload_id = self.get_last_upload_id()
+
+        url = self.get_batch_url(
+            'batchmemberservice/{0}/batchmember/{1}/getBadFile'.format(
+                self.token,
+                upload_id
+            )
+        )
+        response = self.get(url)
+        return response.result
+
+    def get_last_upload_status(self):
+        url = self.get_batch_url(
+            'batchmemberservice/{0}/batchmember/getLastUpload'.format(self.token)
+        )
+        response = self.client.get(url)
+        return response.find('lastUploads[1]/status').text
+
+    def get_last_upload_id(self):
+        url = self.get_batch_url(
+            'batchmemberservice/{0}/batchmember/getLastUpload'.format(self.token)
+        )
+        response = self.client.get(url)
+        return response.find('lastUploads[1]/id').text
+
+
+class EMVAPIMergeUploadParams(object):
+
+    def __init__(
+        self,
+        path,
+        file_encoding,
+        separator,
+        criteria,
+        skip_first_line,
+        mapping
+    ):
+        self.path = path
+        self.file_encoding = file_encoding
+        self.separator = separator
+        self.criteria = criteria
+        self.skip_first_line = skip_first_line
+        self.mapping = mapping
+        self.file_content = base64.b64encode(
+            codecs.open(self.path, 'r', 'utf-8').read()
+        )
