@@ -54,7 +54,11 @@ class MemberAPI (object):
     def __disconnect(self):
         if self.token is None:
             raise NotConnected()
-        self.client.get('/apimember/services/rest/connect/close/', self.token)
+        url = self.get_member_url(
+            'connect/close/{0}'.format(self.token)
+        )
+        response = self.get(url)
+        return response
         self.token = None
 
     def get_batch_url(self, remote_method):
@@ -263,11 +267,7 @@ xmlns:api="http://api.service.apimember.emailvision.com/">
             )
 
         data = self.assemble_upstream_body(parameters)
-
         response = self.put(url, data, parameters.file_content)
-
-        self.response_debug = response
-
         return u"Upload status : {0}".format(
             self.get_last_upload_status()
         )

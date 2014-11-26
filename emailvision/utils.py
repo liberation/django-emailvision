@@ -21,8 +21,6 @@ except ImportError:
                 # normal ElementTree install
                 import elementtree.ElementTree as etree
 
-from httplib2 import Http
-
 
 Error = namedtuple('Error', ['status', 'description'])
 
@@ -32,10 +30,12 @@ class BadResponse(Exception):
     def __init__(self, message):
         super(Exception, self).__init__(message)
 
+
 class FailedApiCall(Exception):
     """The API call is not legit"""
     def __init__(self, error, url):
         super(Exception, self).__init__('%s: %s. url is %s ' % (error.status, error.description, url))
+
 
 class NotConnected(Exception):
     pass
@@ -44,34 +44,32 @@ class NotConnected(Exception):
 class Client(object):
 
     def __init__(self, server_name):
-        self.http = Http()
         self.server_name = 'https://' + server_name
 
     def get(self, action_path, *values):
         url = ''.join((self.server_name, action_path))
-        response, content = self.http.request(url)
-
-        if response['status'] == '500':
-            raise FailedApiCall(GetResponse(content).error, url)
-        if response['status'] != '200':
+        response = requests.get(url)
+        if response.status_code == 500:
+            raise FailedApiCall(GetResponse(response.content).error, url)
+        if response.status_code != 200:
             msg = 'Server `%s` answered %s status for `%s`.\n%s'
             raise BadResponse(msg % (self.server_name,
-                                     response['status'],
+                                     response.status_code,
                                      url,
-                                     content))
-        if response['content-type'] == 'text/xml':
+                                     response.content))
+        if response.headers['content-type'] == 'text/xml':
             msg = 'Server `%s` answered %s content-type for `%s`.\n%s'
             raise BaseResponse(msg % (self.server_name,
-                                      response['content-type'],
+                                      response.headers['content-type'],
                                       url,
-                                      content))
-        response = GetResponse(content)
+                                      response.content))
+        response = GetResponse(response.content)
         return response
 
     def post(self, path, data):
         url = self.server_name + path
-        response, content = self.http.request(url, 'POST', data.encode('latin1', 'ignore'))
-        return PostResponse(content)
+        response = requests.post(url, data.encode('latin1', 'ignore'))
+        return PostResponse(response.content)
 
     def put(self, url, xml_data=None, csv_data=None):
         url = self.server_name + url
