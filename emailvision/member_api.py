@@ -3,6 +3,8 @@ import codecs
 import requests
 import base64
 
+from lxml import etree
+
 from utils import Client, NotConnected, FailedApiCall, Error
 
 
@@ -234,29 +236,33 @@ xmlns:api="http://api.service.apimember.emailvision.com/">
         return response.result
 
     def assemble_upstream_body(self, parameters):
-        data = u"""<?xml version="1.0" encoding="UTF-8"?>
-<mergeUpload>
-<criteria>{0}</criteria>
-<fileName>{1}</fileName>
-<separator>{2}</separator>
-<fileEncoding>{3}</fileEncoding>
-<skipFirstLine>{4}</skipFirstLine>
-<mapping>""".format(
-            parameters.criteria,
-            parameters.path.split('/')[-1],
-            parameters.separator,
-            parameters.file_encoding,
-            parameters.skip_first_line,
+        if not isinstance(parameters, EMVAPIMergeUploadParams):
+            return "something went wrong check your parameters"
+        mergeUpload = etree.Element('mergeUpload')
+        criteria = etree.SubElement(mergeUpload, 'criteria')
+        criteria.text = parameters.criteria
+        file_name = etree.SubElement(mergeUpload, 'fileName')
+        file_name.text = parameters.path.split('/')[-1]
+        separator = etree.SubElement(mergeUpload, 'separator')
+        separator.text = parameters.separator
+        file_encoding = etree.SubElement(mergeUpload, 'fileEncoding')
+        file_encoding.text = parameters.file_encoding
+        skip_first_line = etree.SubElement(mergeUpload, 'skipFirstLine')
+        skip_first_line.text = parameters.skip_first_line
+        mapping = etree.SubElement(mergeUpload, 'mapping')
+        for param in parameters.mapping:
+            column = etree.SubElement(mapping, 'column')
+            for key, value in param.iteritems():
+                node = etree.SubElement(column, key)
+                node.text = str(value)
+
+        data = etree.tostring(
+            mergeUpload,
+            xml_declaration=True,
+            encoding="UTF-8",
+            pretty_print=True
         )
 
-        for param in parameters.mapping:
-            data += u"""<column>
-<colNum>{0}</colNum>
-<fieldName>{1}</fieldName>
-<toReplace>{2}</toReplace>
-</column>""".format(param['colNum'], param['fieldName'], param['toReplace'])
-        data += u"""</mapping>
-</mergeUpload>"""
         return data
 
     def upload_file_merge(self, parameters):
